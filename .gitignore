@@ -18,4 +18,5 @@ Thumbs.db
 .vscode/
 
 # Large raw datasets
-data/raw/*.csv
+data/raw/*.csvmodels/
+__pycache__/
