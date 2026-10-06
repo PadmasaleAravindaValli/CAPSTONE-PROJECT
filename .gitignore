@@ -20,3 +20,9 @@ Thumbs.db
 # Large raw datasets
 data/raw/*.csvmodels/
 __pycache__/
+
+data/raw/
+models/
+*.joblib
+__pycache__/
+.venv/
