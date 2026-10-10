@@ -184,15 +184,23 @@ The classical models use suitable feature encoding and preprocessing methods, de
 
 ## Deep Learning Models
 
+
 Two deep-learning models are included in the project.
 
 ### 1. MLP with Embeddings
+
+## Reported Results
+
 
 The Multilayer Perceptron (MLP) with Embeddings represents categorical input features using learned numerical embeddings. These representations are passed through neural-network layers to predict whether a reported incident is classified as domestic.
 
 The implementation is available in:
 
 `dl_model.py`
+
+- The MLP with embeddings has the highest reported ROC-AUC: **0.9136**.
+- Logistic Regression remains competitive with the more complex models.
+- Precision is lower than recall, so false-positive predictions remain an important consideration.
 
 ### 2. FT-Transformer
 

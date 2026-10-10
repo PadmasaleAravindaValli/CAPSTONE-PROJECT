@@ -1,0 +1,5 @@
+Prediction outcome,Count
+True Domestic predicted as Domestic,38261
+True Domestic predicted as Non-Domestic,6916
+True Non-Domestic predicted as Domestic,34101
+True Non-Domestic predicted as Non-Domestic,157649
