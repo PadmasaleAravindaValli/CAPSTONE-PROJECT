@@ -1,241 +1,482 @@
-# Chicago Crime: Predicting Domestic Incidents (Leakage-Free)
+# Chicago Crime: Predicting Domestic Incidents Using Machine Learning and Deep Learning
 
-A capstone project that predicts whether a reported Chicago crime is classified as **Domestic (`True` or `False`)** using selected crime-related features. The project compares classical machine learning models and PyTorch deep learning architectures, with an emphasis on leakage prevention and chronological evaluation.
+A capstone project that analyses Chicago crime data and predicts whether a reported crime incident is classified as domestic (`Domestic = True/False`). The project uses exploratory data analysis, feature selection, classical machine learning, and deep-learning models to study patterns in reported crime incidents.
 
-The final modeling pipeline uses three features:
+The main focus is to build a reliable prediction pipeline, prevent data leakage, and compare different models using a separate future time period for testing.
 
-- `Primary Type`
-- `Location Description`
-- `Beat`
+## Table of Contents
 
-The six models with supplied test metrics achieve approximately **83% accuracy** and **0.91 ROC-AUC** on the held-out 2025 test set. An additional **FT-Transformer** implementation is now included in `dl_model3.py`; its final metrics should be added to the comparison table after running the script.
+- [Project Overview](#project-overview)
+- [Objectives](#objectives)
+- [Dataset](#dataset)
+- [Project Methodology](#project-methodology)
+- [Exploratory Data Analysis](#exploratory-data-analysis)
+- [Feature Selection](#feature-selection)
+- [Machine Learning Models](#machine-learning-models)
+- [Deep Learning Models](#deep-learning-models)
+- [Preventing Data Leakage](#preventing-data-leakage)
+- [Experimental Results](#experimental-results)
+- [Project Structure](#project-structure)
+- [Technologies Used](#technologies-used)
+- [Installation](#installation)
+- [How to Run](#how-to-run)
+- [Evaluation Metrics](#evaluation-metrics)
+- [Limitations](#limitations)
+- [Future Improvements](#future-improvements)
+- [Author](#author)
 
-## Project Goals
+## Project Overview
 
-- Explore Chicago crime patterns through exploratory data analysis (EDA).
-- Select informative features using mutual information and greedy forward selection.
-- Prevent target and future-data leakage.
-- Compare classical ML models with deep learning models.
-- Evaluate with accuracy, balanced accuracy, precision, recall, F1-score, and ROC-AUC.
-- Use a shuffled-label sanity check to help verify that the evaluation pipeline is not producing artificially high scores.
+Crime is a complex social issue influenced by several factors, including crime type, location, and the circumstances in which an incident is reported. Analysing crime records can help identify patterns and understand how different features relate to reported incidents.
+
+This project uses the Chicago Crimes dataset to predict the `Domestic` target variable. It combines data preprocessing, exploratory data analysis, feature selection, and predictive modelling in a structured workflow.
+
+The project compares five machine-learning models with two deep-learning models. Special attention is given to avoiding data leakage, selecting useful features, and evaluating model performance on data from a later time period.
+
+**Project title:** Computational Analysis of Crime and Social System Using Machine Learning
+
+**Prediction task:** Domestic incident classification
+
+**Target variable:** `Domestic`
+
+**Problem type:** Binary classification
+
+**Dataset source:** [Chicago Data Portal — Crimes](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2)
+
+## Objectives
+
+- Analyse Chicago crime records and understand crime-related patterns.
+- Clean and preprocess the data for predictive modelling.
+- Explore crime distributions across different categories and locations.
+- Identify informative features using feature-selection techniques.
+- Develop and compare five machine-learning models.
+- Develop and evaluate two deep-learning models.
+- Prevent data leakage during preprocessing, feature selection, and evaluation.
+- Compare models using multiple classification metrics.
+- Evaluate predictive performance on a separate chronological test set.
 
 ## Dataset
 
-**Source:** [Chicago Data Portal — Crimes - 2001 to Present](https://data.cityofchicago.org/)
+The project uses the Chicago Crimes dataset available through the Chicago Data Portal.
 
-Download the dataset and save it as:
+The dataset contains reported crime records with information about incidents, their locations, and other crime-related characteristics.
 
-```text
-data/raw/Crimes_-_2001_to_Present_20260902.csv
-```
+Examples of available fields include:
 
-The raw CSV is not stored in this repository because of its large file size.
+- `Date` — date and time associated with the incident.
+- `Primary Type` — reported crime category.
+- `Location Description` — description of the incident location.
+- `Beat` — police beat associated with the incident.
+- `District` — police district.
+- `Community Area` — community area associated with the incident.
+- `Latitude` and `Longitude` — geographic coordinates.
+- `Arrest` — whether an arrest was recorded.
+- `Domestic` — whether the incident was classified as domestic.
 
-## Methodology
+The original dataset contains additional columns, but not all are suitable for prediction. Some fields can reveal information related to the target or introduce data leakage, so they are excluded from the final selected feature set.
 
-### 1. Chronological split
+### Selected Features
 
-The data is split by time without random shuffling.
+The final selected feature set contains three categorical features.
 
-| Split | Period | Purpose |
-|---|---|---|
-| Training | 2023 to June 2024 | Fit preprocessing and models |
-| Validation | July to December 2024 | Feature selection, early stopping, and threshold tuning |
-| Test | All of 2025 | Final evaluation; 236,927 rows |
+| Feature | Description |
+|---|---|
+| `Primary Type` | Category of the reported crime |
+| `Location Description` | Description of where the incident occurred |
+| `Beat` | Police beat associated with the incident |
 
-### 2. Leakage audit
+**Target variable:** `Domestic`
 
-Potentially leaking or inappropriate fields are excluded, including:
+These features are used to train the models to distinguish between domestic and non-domestic incident classifications.
 
-- `Description`, which may explicitly contain domestic-related wording.
-- `IUCR` and `FBI Code`, which may reveal closely related crime classifications.
-- `Block`, IDs, and duplicate coordinate fields.
-- `Updated On`, which can contain later record-update information.
-- `Year`, which is not part of the final feature set.
-- `Arrest`, the other outcome label.
+### Dataset Availability
 
-Categorical encoders are fitted using training data only. The decision threshold is selected using validation data and is not tuned on the test set. The threshold objective maximizes `min(accuracy, balanced accuracy)`.
+Download the dataset from the [Chicago Data Portal](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2).
 
-A shuffled-label sanity check is also used: when labels are randomized, test ROC-AUC should fall to around 0.5.
+Place the downloaded CSV at the expected location:
+
+`data/raw/Crimes_-_2001_to_Present_20260902.csv`
+
+The raw dataset is large and is not included in the GitHub repository. It must be downloaded separately before running the complete preprocessing pipeline.
+
+## Project Methodology
+
+The project follows these stages:
+
+1. **Data Collection:** Obtain the Chicago Crimes dataset.
+2. **Data Preprocessing:** Prepare the records and handle data-quality issues.
+3. **Exploratory Data Analysis:** Study crime distributions, temporal patterns, and location-based patterns.
+4. **Feature Selection:** Identify useful predictors using mutual information and forward feature selection.
+5. **Data Splitting:** Separate training, validation, and testing data chronologically.
+6. **Machine-Learning Model Development:** Train five classical machine-learning models.
+7. **Deep-Learning Model Development:** Train an MLP with Embeddings and an FT-Transformer.
+8. **Model Evaluation:** Compare model performance using multiple classification metrics.
+9. **Result Analysis:** Analyse the strengths and limitations of the models and generate comparison results.
+
+## Exploratory Data Analysis
+
+Exploratory Data Analysis (EDA) is used to understand the dataset before model training.
+
+The project notebooks explore crime distributions, temporal patterns, geographic patterns, and data quality.
+
+The analysis includes:
+
+- Distribution of crime types.
+- Crime patterns across days and times.
+- Crime counts across locations and police beats.
+- Missing values and data-quality checks.
+- Relationships between candidate features and the target variable.
+- Distribution of domestic and non-domestic incidents.
+
+The notebooks contain visualisations and exploratory experiments that help understand the dataset and prepare it for feature selection and model development.
+
+Generated graphs and other outputs are organised under the project's output directories.
 
 ## Feature Selection
 
-### Mutual information
+Feature selection helps identify informative input variables while reducing unnecessary features.
 
-Mutual information scores each feature independently.
+### 1. Mutual Information
 
-| Feature | Mutual information |
-|---|---:|
-| Primary Type | 0.1340 |
-| Location Description | 0.1014 |
-| Longitude | 0.0855 |
-| Latitude | 0.0854 |
-| Beat | 0.0252 |
-| Community Area | 0.0209 |
-| Ward | 0.0182 |
-| District | 0.0181 |
-| IsWeekend | 0.0150 |
-| DayOfWeek | 0.0085 |
-| Hour | 0.0059 |
-| Month | 0.0048 |
-| LatLon_Missing | 0.0004 |
+Mutual information estimates how much information an individual feature provides about the target variable.
 
-### Greedy forward selection
+The associated report is:
 
-Features are added one at a time based on the increase in validation ROC-AUC. The search stops when the improvement from adding another feature is below 0.003 AUC.
+`reports/mutual_info_domestic.csv`
 
-| Step | Feature added | Validation ROC-AUC |
+The feature-selection experiments examine variables such as `Primary Type`, `Location Description`, `Longitude`, `Latitude`, and `Beat`.
+
+### 2. Forward Feature Selection
+
+Forward feature selection adds features incrementally and evaluates their contribution using validation ROC-AUC.
+
+The associated report is:
+
+`reports/feature_selection_domestic.csv`
+
+The recorded selection results are:
+
+| Step | Feature Added | Validation ROC-AUC |
 |---|---|---:|
-| 1 | Primary Type | 0.8457 |
-| 2 | Location Description | 0.9121 |
-| 3 | Beat | 0.9178 |
+| 1 | `Primary Type` | 0.8457 |
+| 2 | `Location Description` | 0.9121 |
+| 3 | `Beat` | 0.9178 |
 
-The feature-selection reports are saved in `reports/`.
+The final selected feature set consists of `Primary Type`, `Location Description`, and `Beat`.
 
-## Models
+Feature selection uses training and validation data rather than the final test set.
 
-### Classical machine learning
+## Machine Learning Models
 
-| Model | Encoding |
+Five machine-learning models are included in the final comparison.
+
+| Model | Description |
 |---|---|
-| Logistic Regression | One-hot |
-| Random Forest | Target encoding |
-| HistGradientBoosting | Target encoding |
-| XGBoost | One-hot |
+| Logistic Regression | A linear classification algorithm used as a baseline model. |
+| Random Forest | An ensemble model that combines predictions from multiple decision trees. |
+| HistGradientBoosting | A gradient-boosting model that learns patterns through sequential decision-tree training. |
+| XGBoost | A gradient-boosting algorithm designed for efficient and accurate prediction. |
+| LightGBM | A gradient-boosting framework designed for efficient training on structured datasets. |
 
-### Deep learning
+These models provide different approaches to learning patterns in categorical crime data.
 
-| Model | Implementation | Input representation |
-|---|---|---|
-| MLP with Embeddings | PyTorch (`dl_model.py`) | Learned categorical embeddings |
-| FT-Transformer | PyTorch (`dl_model3.py`) | Categorical tokens, feature offsets, and Transformer encoder |
+The classical models use suitable feature encoding and preprocessing methods, depending on the implementation.
 
-The FT-Transformer implementation builds category vocabularies from training data only; unseen categories map to index `0`. It uses validation ROC-AUC for early stopping and learning-rate scheduling, then chooses a decision threshold on the validation set.
+## Deep Learning Models
 
-**Repository status note:** `dl_model2.py` (the earlier Wide & Deep implementation) is not present in the current root file listing. Wide & Deep is therefore retained below as a previously reported experiment, not as a currently runnable script in this repository. Add its script back if you want the experiment to be reproducible from this repo.
+Two deep-learning models are included in the project.
 
-## Reported Results
+### 1. MLP with Embeddings
 
-The table below contains the six models for which test metrics were supplied. These results use the full 2025 test set.
+The Multilayer Perceptron (MLP) with Embeddings represents categorical input features using learned numerical embeddings. These representations are passed through neural-network layers to predict whether a reported incident is classified as domestic.
 
-| Model | Threshold | Accuracy | Balanced Accuracy | Precision | Recall | F1-score | ROC-AUC |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| MLP (Embeddings) | 0.57 | 0.8327 | 0.8336 | 0.5397 | 0.8350 | 0.6556 | 0.9136 |
-| Logistic Regression | 0.53 | 0.8271 | 0.8276 | 0.5299 | 0.8285 | 0.6463 | 0.9094 |
-| Random Forest | 0.51 | 0.8305 | 0.8299 | 0.5359 | 0.8290 | 0.6510 | 0.9103 |
-| HistGradientBoosting | 0.55 | 0.8313 | 0.8306 | 0.5373 | 0.8294 | 0.6521 | 0.9114 |
-| XGBoost | 0.52 | 0.8312 | 0.8311 | 0.5371 | 0.8309 | 0.6524 | 0.9125 |
+The implementation is available in:
 
-- The MLP with embeddings has the highest reported ROC-AUC: **0.9136**.
-- Wide & Deep has the highest reported accuracy: **83.32%**.
-- Logistic Regression remains competitive with the more complex models.
-- Precision is lower than recall, so false-positive predictions remain an important consideration.
+`dl_model.py`
 
-The FT-Transformer test metrics are not listed here because no final metric values were supplied. Run `dl_model3.py` and add its measured results before comparing it quantitatively with the other models.
+### 2. FT-Transformer
 
-## Repository Structure
+FT-Transformer is a transformer-based architecture designed for tabular data. It uses attention mechanisms to learn relationships between input features and generate predictions.
 
-The current root-level files and folders include:
+The implementation is available in:
+
+`dl_model3.py`
+
+Both deep-learning models use PyTorch. Their results are compared with the classical machine-learning models to understand how neural-network approaches perform on the selected crime features.
+
+## Preventing Data Leakage
+
+Data leakage occurs when a model receives information during training that would not legitimately be available at prediction time. Leakage can lead to misleadingly high evaluation results.
+
+The project applies several safeguards:
+
+- Excludes `Description`, which can reveal information directly related to domestic-incident classification.
+- Excludes other potentially problematic fields from the final selected feature set.
+- Uses a chronological split instead of randomly mixing records across time.
+- Fits preprocessing and encoding steps using training data only, where applicable.
+- Performs feature selection using training and validation data.
+- Selects classification thresholds using validation data rather than the final test set.
+- Uses a shuffled-label sanity check to investigate whether the model depends on genuine target-related patterns.
+
+### Chronological Data Split
+
+| Partition | Time Period |
+|---|---|
+| Training | 2023 to June 2024 |
+| Validation | July to December 2024 |
+| Testing | January to December 2025 |
+
+The reported test set contains **236,927 records**.
+
+This chronological approach evaluates the models on a later period than the training data, providing a more realistic assessment of their ability to generalise over time.
+
+## Experimental Results
+
+The performance of five machine-learning models and two deep-learning models was compared using the held-out test dataset.
+
+The evaluation includes accuracy, balanced accuracy, precision, recall, F1-score, and ROC-AUC. Classification thresholds are selected using validation data.
+
+### Performance Comparison of All Seven Models
+
+| Category | Model | Threshold | Accuracy | Balanced Accuracy | Precision | Recall | F1-score | ROC-AUC |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| ML | LightGBM | 0.69 | 0.8669 | 0.8092 | 0.6335 | 0.7160 | 0.6723 | 0.9114 |
+| ML | Logistic Regression | 0.53 | 0.8271 | 0.8276 | 0.5299 | 0.8285 | 0.6463 | 0.9094 |
+| ML | Random Forest | 0.51 | 0.8305 | 0.8299 | 0.5359 | 0.8290 | 0.6510 | 0.9103 |
+| ML | HistGradientBoosting | 0.55 | 0.8313 | 0.8306 | 0.5373 | 0.8294 | 0.6521 | 0.9114 |
+| ML | XGBoost | 0.52 | 0.8312 | 0.8311 | 0.5371 | 0.8309 | 0.6524 | 0.9125 |
+| DL | MLP with Embeddings | 0.55 | 0.8318 | 0.8331 | 0.5380 | 0.8352 | 0.6545 | 0.9130 |
+| DL | FT-Transformer | 0.57 | 0.8340 | 0.8327 | 0.5423 | 0.8306 | 0.6562 | 0.9131 |
+
+**Test dataset:** 236,927 records, January–December 2025.
+
+**Results source:** `outputs/leakfree_results.csv`
+
+*The values above represent the recorded model results. Confirm that the results file contains these exact values before publishing the README or using the numbers in a research paper.*
+
+### Results Analysis
+
+- **Highest accuracy:** LightGBM achieved 86.69% accuracy.
+- **Highest balanced accuracy:** MLP with Embeddings achieved 83.31% balanced accuracy.
+- **Highest precision:** LightGBM achieved 63.35% precision.
+- **Highest recall:** MLP with Embeddings achieved 83.52% recall.
+- **Highest F1-score:** LightGBM achieved an F1-score of 67.23%.
+- **Highest ROC-AUC:** FT-Transformer achieved a ROC-AUC of 91.31%, closely followed by the MLP with Embeddings at 91.30%.
+
+LightGBM achieved the highest accuracy and F1-score among the seven models. However, its balanced accuracy and recall were lower than those of several other models. This shows why accuracy alone is not enough to compare models, especially when the target classes are imbalanced.
+
+The MLP with Embeddings achieved the highest balanced accuracy and recall, while FT-Transformer achieved the highest ROC-AUC. The results indicate that different models have different strengths depending on the evaluation metric.
+
+Overall, the comparison highlights the importance of evaluating several metrics instead of selecting a model based only on accuracy.
+
+These models identify statistical patterns in historical crime records. Their predictions do not establish the causes of domestic incidents and should not be treated as proof of wrongdoing by any individual.
+
+## Project Structure
+
+The repository contains Python scripts, Jupyter notebooks, reports, and generated outputs.
 
 ```text
 CAPSTONE-PROJECT/
-├── build_dataset.py       # Dataset preparation, leakage audit, splits, feature selection
-├── data_utils.py          # Shared loading, threshold, metrics, and result helpers
-├── ml_models.py            # Classical ML model training
-├── dl_model.py             # MLP with embeddings
-├── dl_model3.py            # FT-Transformer (PyTorch)
-├── evaluate_ml.py          # Classical ML evaluation and chart generation
-├── requirements.txt
+│
 ├── data/
-│   └── processed/          # Processed dataset files
-├── notebooks/              # EDA and experiments
-├── outputs/                # Results and visualizations
-├── reports/                # Feature-selection reports
-└── src/                    # Supporting source modules
+│   └── processed/
+│
+├── notebooks/
+│   ├── crime_analysis_EDA.ipynb
+│   ├── crime_analysis.ipynb
+│   ├── Base_Models.ipynb
+│   ├── Chicago_Crime_Base_Models.ipynb
+│   ├── 02_Crime_Feature_Selection.ipynb
+│   ├── 03_Leakage_Safe_Cluster_Feature_Selection.ipynb
+│   ├── 04_Chicago_Selected_Feature_Models.ipynb
+│   ├── Chicago_Crime_5ML_2DL_Balanced.ipynb
+│   ├── Chicago_Crime_Clean_ML_DL.ipynb
+│   └── fixed_code.ipynb
+│
+├── outputs/
+│   ├── EDA_graphs/
+│   └── leakfree_results.csv
+│
+├── reports/
+│   ├── mutual_info_domestic.csv
+│   └── feature_selection_domestic.csv
+│
+├── build_dataset.py
+├── data_utils.py
+├── ml_models.py
+├── dl_model.py
+├── dl_model3.py
+├── evaluate_ml.py
+├── requirements.txt
+├── .gitignore
+└── README.md
 ```
 
-The raw dataset and trained model artifacts may be excluded from Git because of their size. Folder contents can change as experiments are added.
+*This is a representative structure of the main project files. Actual notebook names and generated directories may differ depending on the current repository contents and local experiments.*
 
-## Setup
+### Main Python Files
 
-Python 3.11 is recommended. Install dependencies from the repository root:
+| File | Purpose |
+|---|---|
+| `build_dataset.py` | Prepares the data, performs preprocessing and leakage checks, creates chronological splits, and supports feature selection. |
+| `data_utils.py` | Provides shared data-processing, evaluation, threshold-selection, and results functions. |
+| `ml_models.py` | Implements the classical machine-learning experiments. |
+| `dl_model.py` | Implements the MLP with Embeddings. |
+| `dl_model3.py` | Implements the FT-Transformer model. |
+| `evaluate_ml.py` | Generates evaluation outputs and classical-model comparisons. |
+| `requirements.txt` | Lists Python package dependencies. |
+
+The notebooks contain exploratory data analysis, baseline models, feature-selection experiments, and additional modelling experiments. The final reported comparison should be distinguished from earlier exploratory results.
+
+## Technologies Used
+
+- **Programming Language:** Python
+- **Data Processing:** Pandas, NumPy
+- **Machine Learning:** Scikit-learn, XGBoost, LightGBM
+- **Deep Learning:** PyTorch
+- **Data Visualisation:** Matplotlib, Seaborn
+- **Model Persistence:** Joblib
+- **Development Tools:** Jupyter Notebook, VS Code
+- **Version Control:** Git and GitHub
+
+## Installation
+
+### Prerequisites
+
+- Python compatible with the versions required by the project dependencies.
+- Git.
+- The Chicago Crimes CSV dataset.
+- Sufficient memory and storage to process the dataset.
+
+### 1. Clone the Repository
 
 ```bash
+git clone https://github.com/PadmasaleAravindaValli/CAPSTONE-PROJECT.git
+cd CAPSTONE-PROJECT
+```
+
+### 2. Create a Virtual Environment
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, use Command Prompt:
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+### 3. Install Dependencies
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Core dependencies include:
-
-```text
-numpy
-pandas
-scikit-learn>=1.3
-matplotlib
-seaborn
-xgboost
-torch
-joblib
-```
-
-Use `scikit-learn >= 1.3` for `TargetEncoder`. For reproducibility, record the package versions used in your environment, for example with `pip freeze`.
+Ensure that the installed package versions are compatible with the project scripts and notebooks.
 
 ## How to Run
 
-Run commands from the repository root.
+Run the commands from the project root directory. The required dataset must be downloaded and placed at the expected path before running the data pipeline.
 
-### 1. Build the processed dataset
+### Step 1: Prepare the Required Directories
 
-Make sure the raw CSV is in `data/raw/`, then run:
+```powershell
+New-Item -ItemType Directory -Force models, reports, outputs, data/processed
+```
+
+Create `data/raw/` as well if it does not already exist.
+
+### Step 2: Prepare the Dataset
+
+Download the Chicago Crimes CSV from the [Chicago Data Portal](https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2).
+
+Place it in the expected raw-data directory, then run:
 
 ```bash
 python build_dataset.py
 ```
 
-The default target is `Domestic`. The script also supports `--target Arrest`, but downstream modeling scripts are configured for `Domestic`.
-
-### 2. Train the classical ML models
+### Step 3: Run the Machine-Learning Experiments
 
 ```bash
 python ml_models.py
 ```
 
-### 3. Train the deep learning models
+This runs the classical-model experiments supported by the script. Confirm that the LightGBM experiment is included in the current implementation if you want to reproduce all five machine-learning rows in the results table.
+
+### Step 4: Run the MLP with Embeddings
 
 ```bash
 python dl_model.py
+```
+
+This runs the MLP deep-learning experiment.
+
+### Step 5: Run FT-Transformer
+
+```bash
 python dl_model3.py
 ```
 
-`dl_model.py` trains the MLP with embeddings. `dl_model3.py` trains the FT-Transformer and saves its result row using the shared result utilities.
+This runs the FT-Transformer experiment using the prepared data and the required dependencies.
 
-### 4. Generate the final comparison
+### Step 6: Generate Evaluation Results
 
 ```bash
 python evaluate_ml.py
 ```
 
-Check `data_utils.py` and `evaluate_ml.py` if you change how result rows are saved. Ensure the final results file retains the deep-learning rows rather than replacing them with only the classical ML rows. The current `evaluate_ml.py` should be checked against the intended seven-model comparison before treating its output as the complete final table.
+This runs the evaluation script for the models supported by its implementation. Verify which model results it includes before assuming it regenerates the complete seven-model comparison.
 
-Trained models are not guaranteed to be present in the repository; regenerate them by running the relevant training scripts.
+**Note:** `data_utils.py` provides shared functions imported by other scripts and is not intended to be run independently.
 
-## Notebooks and Outputs
+The exact execution order and output locations should follow the current implementation of the repository scripts and notebooks.
 
-The `notebooks/` directory contains exploratory analysis, baseline-model experiments, feature-selection work, and earlier ML/DL comparisons. The `outputs/` directory contains generated charts and result files, while `reports/` contains feature-selection evidence.
+## Evaluation Metrics
 
-The final leakage-free results should be distinguished from earlier notebook experiments if their data splits or evaluation procedures differ.
+The project uses the following metrics to compare model performance:
+
+- **Accuracy:** The proportion of all predictions that are correct.
+- **Balanced Accuracy:** The average recall across the two classes.
+- **Precision:** The proportion of predicted domestic incidents that are actually domestic.
+- **Recall:** The proportion of actual domestic incidents correctly identified.
+- **F1-score:** The harmonic mean of precision and recall.
+- **ROC-AUC:** Measures how well a model distinguishes positive cases from negative cases across different classification thresholds.
+
+Using multiple metrics provides a more complete understanding of model performance than accuracy alone. This is particularly important when the target classes are imbalanced.
 
 ## Limitations
 
-- The model predicts the `Domestic` label recorded in historical reports; it does not independently establish the nature of an incident.
-- Historical crime records can contain reporting and geographic biases.
-- The selected features indicate associations, not causes.
-- Results on Chicago's 2025 records may not generalize to other cities or future periods.
-- Predictions should not be used as the sole basis for enforcement or other high-impact decisions.
+- The project uses reported Chicago crime data, so the results may not generalise to other cities.
+- Reported crime records do not necessarily represent every incident that occurs.
+- Predictive relationships do not establish the causes of domestic incidents.
+- Changes in reporting practices and data distributions can affect model performance.
+- Imbalanced target classes can affect the interpretation of accuracy and other metrics.
+- Predictions should not be treated as proof of wrongdoing or used as the sole basis for decisions about individuals.
+- The raw dataset is large and must be downloaded separately.
+- Earlier notebook experiments may produce results that differ from the final leakage-free pipeline.
+- Reproducing all seven results requires the corresponding model implementations, compatible dependencies, and consistent data-processing settings.
+
+## Future Improvements
+
+- Evaluate models on additional future time periods.
+- Improve model reproducibility by recording package versions, parameters, and random seeds.
+- Investigate model calibration and prediction confidence.
+- Improve interpretability using appropriate feature-importance and explanation techniques.
+- Test additional leakage-safe features.
+- Organise generated graphs, trained models, and evaluation outputs consistently.
+- Compare models under consistent preprocessing and validation procedures.
+- Evaluate whether the observed performance remains stable as new crime records become available.
 
 ## Author
 
 **P. Aravinda Valli**
 
-## Repository
+GitHub: [PadmasaleAravindaValli](https://github.com/PadmasaleAravindaValli)
 
-[CAPSTONE-PROJECT on GitHub](https://github.com/PadmasaleAravindaValli/CAPSTONE-PROJECT)
+Project Repository: [CAPSTONE-PROJECT](https://github.com/PadmasaleAravindaValli/CAPSTONE-PROJECT)
