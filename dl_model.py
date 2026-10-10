@@ -1,65 +1,98 @@
-"""Shared helpers: load the processed dataset, honour its chronological split, metrics, results table."""
-import numpy as np, pandas as pd
-from pathlib import Path
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, precision_score,
-                             recall_score, f1_score, roc_auc_score)
+"""
+STEP 3 - Deep-learning model: MLP with categorical embeddings (PyTorch).
 
-ROOT = Path(__file__).parent
-DATA = ROOT / "data/processed/chicago_domestic_minimal.csv"
-OUT_DIR = ROOT / "outputs"
-RESULTS = OUT_DIR / "leakfree_results.csv"
-TARGET = "Domestic"
-FEATURES = ["Primary Type", "Location Description", "Beat"]   # all treated as categorical
-SEED = 42
+Uses data_utils.py for data, split, threshold selection (validation only) and the shared results table.
+Run:  python dl_model.py
+Needs: pip install torch
+"""
+import numpy as np, pandas as pd, torch, torch.nn as nn
+from sklearn.metrics import roc_auc_score
+from data_utils import (FEATURES, SEED, load_splits, best_threshold, report, metrics_row, save_rows)
 
+MODEL_NAME = "MLP (embeddings)"
+MIN_COUNT = 20          # categories rarer than this in TRAIN share one "unknown" id
+BATCH = 2048
+MAX_EPOCHS = 30
+PATIENCE = 4            # stop when validation AUC has not improved for this many epochs
+LR = 2e-3
 
-def load_splits():
-    df = pd.read_csv(DATA)
-    for c in FEATURES:
-        df[c] = df[c].astype(str)                  # Beat is a code, not a quantity
-    parts = []
-    for s in ("train", "val", "test"):
-        d = df[df.split == s]
-        parts.append((d[FEATURES].reset_index(drop=True), d[TARGET].to_numpy()))
-    return parts                                   # (Xtr,ytr), (Xva,yva), (Xte,yte)
+torch.manual_seed(SEED); np.random.seed(SEED)
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
+# ---------------------------------------------------------------- data -> integer ids (vocab from TRAIN only)
+(Xtr, ytr), (Xva, yva), (Xte, yte) = load_splits()
+vocabs = {}
+for c in FEATURES:
+    vc = Xtr[c].value_counts()
+    keep = vc[vc >= MIN_COUNT].index
+    vocabs[c] = {v: i + 1 for i, v in enumerate(keep)}          # 0 = unknown / rare / unseen
 
-def best_threshold(y_val, p_val):
-    """Threshold chosen on VALIDATION only: maximises min(accuracy, balanced accuracy)."""
-    ts = np.linspace(0.05, 0.95, 91)
-    sc = [min(accuracy_score(y_val, p_val >= t), balanced_accuracy_score(y_val, p_val >= t)) for t in ts]
-    return float(ts[int(np.argmax(sc))])
+def encode(X):
+    return torch.tensor(np.stack([X[c].map(vocabs[c]).fillna(0).astype(int).to_numpy() for c in FEATURES], axis=1),
+                        dtype=torch.long)
 
+Ttr, Tva, Tte = encode(Xtr), encode(Xva), encode(Xte)
+Ytr = torch.tensor(ytr, dtype=torch.float32)
+print(f"device={device}  train/val/test = {len(Ttr):,}/{len(Tva):,}/{len(Tte):,}  "
+      f"train positive rate = {ytr.mean():.3f}")
 
-def report(name, y, p, t):
-    pred = (p >= t).astype(int)
-    a, b = accuracy_score(y, pred), balanced_accuracy_score(y, pred)
-    print(f"{name:<22} thr={t:.2f}  accuracy={a:.4f}  balanced_acc={b:.4f}  gap={abs(a-b):.4f}")
-    return a, b
+# ---------------------------------------------------------------- model
+class MLP(nn.Module):
+    def __init__(self, sizes):
+        super().__init__()
+        self.embs = nn.ModuleList([nn.Embedding(n + 1, min(50, (n + 2) // 2)) for n in sizes])
+        d = sum(e.embedding_dim for e in self.embs)
+        self.net = nn.Sequential(
+            nn.Linear(d, 256), nn.BatchNorm1d(256), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(256, 128), nn.BatchNorm1d(128), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(128, 1))
+    def forward(self, x):
+        z = torch.cat([e(x[:, i]) for i, e in enumerate(self.embs)], dim=1)
+        return self.net(z).squeeze(1)
 
+model = MLP([len(vocabs[c]) for c in FEATURES]).to(device)
+opt = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
+# class imbalance: weight positives; the decision threshold is tuned on validation afterwards
+pos_weight = torch.tensor((1 - ytr.mean()) / ytr.mean(), dtype=torch.float32, device=device)
+loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
-def metrics_row(name, y, p, t):
-    """One row of the final results table (computed on the TEST set)."""
-    pred = (p >= t).astype(int)
-    return {"Model": name,
-            "Features": " + ".join(FEATURES),
-            "Train/Val/Test": "2023-Jun24 / Jul-Dec24 / 2025",
-            "Test_rows": len(y),
-            "Threshold": round(t, 2),
-            "Accuracy": round(accuracy_score(y, pred), 4),
-            "Balanced_Accuracy": round(balanced_accuracy_score(y, pred), 4),
-            "Precision": round(precision_score(y, pred), 4),
-            "Recall": round(recall_score(y, pred), 4),
-            "F1": round(f1_score(y, pred), 4),
-            "ROC_AUC": round(roc_auc_score(y, p), 4)}
+@torch.no_grad()
+def predict(T):
+    model.eval()
+    out = [torch.sigmoid(model(T[i:i + 8192].to(device))).cpu() for i in range(0, len(T), 8192)]
+    return torch.cat(out).numpy()
 
+# ---------------------------------------------------------------- train with early stopping on validation AUC
+best_auc, best_state, bad = 0.0, None, 0
+for epoch in range(1, MAX_EPOCHS + 1):
+    model.train()
+    perm = torch.randperm(len(Ttr))
+    total = 0.0
+    for i in range(0, len(perm), BATCH):
+        idx = perm[i:i + BATCH]
+        if len(idx) < 2:
+            continue                                   # BatchNorm needs more than one row
+        xb, yb = Ttr[idx].to(device), Ytr[idx].to(device)
+        opt.zero_grad()
+        loss = loss_fn(model(xb), yb)
+        loss.backward(); opt.step()
+        total += loss.item() * len(idx)
+    auc = roc_auc_score(yva, predict(Tva))
+    print(f"epoch {epoch:2d}  train_loss={total / len(perm):.4f}  val_AUC={auc:.4f}")
+    if auc > best_auc + 1e-4:
+        best_auc, bad = auc, 0
+        best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    else:
+        bad += 1
+        if bad >= PATIENCE:
+            print("early stopping"); break
+model.load_state_dict(best_state)
 
-def save_rows(rows):
-    """Add/replace rows in outputs/leakfree_results.csv (so ML and DL scripts share one table)."""
-    OUT_DIR.mkdir(exist_ok=True)
-    new = pd.DataFrame(rows)
-    if RESULTS.exists():
-        old = pd.read_csv(RESULTS)
-        new = pd.concat([old[~old.Model.isin(new.Model)], new], ignore_index=True)
-    new.to_csv(RESULTS, index=False)
-    return new
+# ---------------------------------------------------------------- threshold on VALIDATION, report on TEST
+p_va, p_te = predict(Tva), predict(Tte)
+thr = best_threshold(yva, p_va)
+print("\nVALIDATION"); report(MODEL_NAME, yva, p_va, thr)
+print("TEST      "); report(MODEL_NAME, yte, p_te, thr)
+
+table = save_rows([metrics_row(MODEL_NAME, yte, p_te, thr)])
+print("\n", table.to_string(index=False))

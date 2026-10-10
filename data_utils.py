@@ -9,18 +9,29 @@ DATA = ROOT / "data/processed/chicago_domestic_minimal.csv"
 OUT_DIR = ROOT / "outputs"
 RESULTS = OUT_DIR / "leakfree_results.csv"
 TARGET = "Domestic"
-FEATURES = ["Primary Type", "Location Description", "Beat"]   # all treated as categorical
 SEED = 42
 
 
+def _detect_features():
+    """Features = every column the dataset builder kept, except the target and the split label."""
+    if DATA.exists():
+        cols = pd.read_csv(DATA, nrows=0).columns
+        return [c for c in cols if c not in (TARGET, "split")]
+    return ["Primary Type", "Location Description", "Beat"]   # fallback if the CSV is not built yet
+
+
+FEATURES = _detect_features()      # all treated as categorical
+
+
 def load_splits():
-    df = pd.read_csv(DATA)
+    # read feature columns as text so codes like Beat never become floats ("1234.0")
+    df = pd.read_csv(DATA, dtype={c: str for c in FEATURES})
     for c in FEATURES:
         df[c] = df[c].astype(str)                  # Beat is a code, not a quantity
     parts = []
     for s in ("train", "val", "test"):
-        d = df[df.split == s]
-        parts.append((d[FEATURES].reset_index(drop=True), d[TARGET].to_numpy()))
+        d = df[df["split"] == s]
+        parts.append((d[FEATURES].reset_index(drop=True), d[TARGET].astype(int).to_numpy()))
     return parts                                   # (Xtr,ytr), (Xva,yva), (Xte,yte)
 
 
@@ -48,9 +59,9 @@ def metrics_row(name, y, p, t):
             "Threshold": round(t, 2),
             "Accuracy": round(accuracy_score(y, pred), 4),
             "Balanced_Accuracy": round(balanced_accuracy_score(y, pred), 4),
-            "Precision": round(precision_score(y, pred), 4),
-            "Recall": round(recall_score(y, pred), 4),
-            "F1": round(f1_score(y, pred), 4),
+            "Precision": round(precision_score(y, pred, zero_division=0), 4),
+            "Recall": round(recall_score(y, pred, zero_division=0), 4),
+            "F1": round(f1_score(y, pred, zero_division=0), 4),
             "ROC_AUC": round(roc_auc_score(y, p), 4)}
 
 
@@ -60,6 +71,6 @@ def save_rows(rows):
     new = pd.DataFrame(rows)
     if RESULTS.exists():
         old = pd.read_csv(RESULTS)
-        new = pd.concat([old[~old.Model.isin(new.Model)], new], ignore_index=True)
+        new = pd.concat([old[~old["Model"].isin(new["Model"])], new], ignore_index=True)
     new.to_csv(RESULTS, index=False)
     return new

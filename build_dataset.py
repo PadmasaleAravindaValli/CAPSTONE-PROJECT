@@ -19,13 +19,23 @@ OTHER_LABEL = "Arrest" if TARGET == "Domestic" else "Domestic"
 ROOT = Path(__file__).parent
 RAW = ROOT / "data/raw/Crimes_-_2001_to_Present_20260902.csv"
 OUT = ROOT / f"data/processed/chicago_{TARGET.lower()}_minimal.csv"
+REPORTS = ROOT / "reports"
 SEED = 42
 
-# ---------------------------------------------------------------- 1. load, parse, sort
+# FIX 2: make sure output folders exist (to_csv does not create them)
+REPORTS.mkdir(exist_ok=True)
+OUT.parent.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------- 1. load, parse, restrict dates, sort
 df = pd.read_csv(RAW, low_memory=False)
-df["Date"] = pd.to_datetime(df["Date"], format="%m/%d/%Y %I:%M:%S %p")
-df = df.sort_values("Date", kind="stable").reset_index(drop=True)
 print("raw rows:", len(df))
+df["Date"] = pd.to_datetime(df["Date"], format="%m/%d/%Y %I:%M:%S %p")
+
+# FIX 1: keep only 2023-2025 so train/val/test match the "2023-Jun24 / Jul-Dec24 / 2025" design
+# (drop the upper bound if you also want 2026 rows in the test set)
+df = df[(df["Date"] >= "2023-01-01") & (df["Date"] < "2026-01-01")]
+df = df.sort_values("Date", kind="stable").reset_index(drop=True)
+print("rows in 2023-2025 window:", len(df))
 
 # ---------------------------------------------------------------- 2. leakage audit
 desc_dom = df["Description"].str.contains("DOMESTIC", na=False)
@@ -41,7 +51,9 @@ LEAKAGE_AUDIT = {
     "Year": "not a usable predictor for future years (extrapolation) - excluded",
     OTHER_LABEL: f"another outcome label - must not be a feature when predicting {TARGET}",
 }
-print("[audit] excluded columns:"); [print(f"   - {k}: {v}") for k, v in LEAKAGE_AUDIT.items()]
+print("[audit] excluded columns:")
+for k, v in LEAKAGE_AUDIT.items():          # FIX 7: plain loop instead of list comprehension
+    print(f"   - {k}: {v}")
 
 # ---------------------------------------------------------------- 3. cleaning (no row loss except exact duplicates)
 before = len(df)
@@ -70,26 +82,31 @@ CANDIDATES = CAT + NUM
 tr, va = df[df.split == "train"], df[df.split == "val"]
 
 # 5a. filter step: mutual information with the target, TRAIN only
-Xmi = tr[CANDIDATES].copy()
-for c in CAT: Xmi[c] = Xmi[c].astype(str).astype("category").cat.codes
-mi = pd.Series(mutual_info_classif(Xmi.fillna(-1), tr[TARGET], discrete_features=[c in CAT for c in CANDIDATES],
+# FIX 4: run on a sample (continuous features use a slow nearest-neighbour estimator)
+tr_mi = tr.sample(min(200_000, len(tr)), random_state=SEED)
+Xmi = tr_mi[CANDIDATES].copy()
+for c in CAT:
+    Xmi[c] = Xmi[c].astype(str).astype("category").cat.codes
+mi = pd.Series(mutual_info_classif(Xmi.fillna(-1), tr_mi[TARGET],
+                                   discrete_features=[c in CAT for c in CANDIDATES],
                                    random_state=SEED), index=CANDIDATES).sort_values(ascending=False)
-print("\n[selection] mutual information (train):\n", mi.round(4).to_string())
+print("\n[selection] mutual information (train sample):\n", mi.round(4).to_string())
 
 # 5b. wrapper step: greedy forward selection, scored by validation ROC-AUC
 def make(cols):
     enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=np.nan)
     cc = [c for c in cols if c in CAT]
     def prep(d, fit=False):
-        X = d[cols].copy().astype(float, errors="ignore")
-        for c in cc: X[c] = X[c].astype(str)
+        X = d[cols].copy()                  # FIX 3: removed the no-op astype(float, errors="ignore")
+        for c in cc:
+            X[c] = X[c].astype(str)
         if cc:
             X[cc] = enc.fit_transform(X[cc]) if fit else enc.transform(X[cc])
         return X.astype(float)
     mask = [c in cc for c in cols]
     return prep, mask
 
-sub = tr.sample(150_000, random_state=SEED)       # subsample only to speed up the search
+sub = tr.sample(min(150_000, len(tr)), random_state=SEED)   # subsample only to speed up the search
 def score(cols):
     prep, mask = make(cols)
     m = HistGradientBoostingClassifier(max_iter=80, learning_rate=0.12, class_weight="balanced",
@@ -101,13 +118,14 @@ chosen, remaining, history, best = [], CANDIDATES.copy(), [], 0.5
 while remaining:
     s = {c: score(chosen + [c]) for c in remaining}
     c, auc = max(s.items(), key=lambda kv: kv[1])
-    if auc - best < 0.003:  break                  # stop when a new feature adds < 0.003 AUC
+    if auc - best < 0.003:
+        break                               # stop when a new feature adds < 0.003 AUC
     chosen.append(c); remaining.remove(c); best = auc
     history.append({"step": len(chosen), "added": c, "val_auc": round(auc, 4)})
     print(f"   + {c:<22} val AUC = {auc:.4f}")
 sel = pd.DataFrame(history)
-sel.to_csv(ROOT / f"reports/feature_selection_{TARGET.lower()}.csv", index=False)
-mi.rename("mutual_info").to_csv(ROOT / f"reports/mutual_info_{TARGET.lower()}.csv")
+sel.to_csv(REPORTS / f"feature_selection_{TARGET.lower()}.csv", index=False)
+mi.rename("mutual_info").to_csv(REPORTS / f"mutual_info_{TARGET.lower()}.csv")
 print("\nFINAL minimal feature set:", chosen)
 
 # ---------------------------------------------------------------- 6. save

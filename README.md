@@ -121,7 +121,6 @@ The table below contains the six models for which test metrics were supplied. Th
 | Model | Threshold | Accuracy | Balanced Accuracy | Precision | Recall | F1-score | ROC-AUC |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | MLP (Embeddings) | 0.57 | 0.8327 | 0.8336 | 0.5397 | 0.8350 | 0.6556 | 0.9136 |
-| Wide & Deep | 0.58 | 0.8332 | 0.8320 | 0.5408 | 0.8301 | 0.6549 | 0.9127 |
 | Logistic Regression | 0.53 | 0.8271 | 0.8276 | 0.5299 | 0.8285 | 0.6463 | 0.9094 |
 | Random Forest | 0.51 | 0.8305 | 0.8299 | 0.5359 | 0.8290 | 0.6510 | 0.9103 |
 | HistGradientBoosting | 0.55 | 0.8313 | 0.8306 | 0.5373 | 0.8294 | 0.6521 | 0.9114 |

@@ -1,7 +1,7 @@
 Model,Features,Train/Val/Test,Test_rows,Threshold,Accuracy,Balanced_Accuracy,Precision,Recall,F1,ROC_AUC
 LightGBM,Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.69,0.8669,0.8092,0.6335,0.716,0.6723,0.9114
-MLP (embeddings),Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.55,0.8269,0.8345,0.5287,0.8469,0.651,0.9136
-FT-Transformer (DL),Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.53,0.8321,0.8339,0.5385,0.8367,0.6552,0.9137
+MLP (embeddings),Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.55,0.8318,0.8331,0.538,0.8352,0.6545,0.913
+FT-Transformer (DL),Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.57,0.834,0.8327,0.5423,0.8306,0.6562,0.9131
 LogisticRegression,Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.53,0.8271,0.8276,0.5299,0.8285,0.6463,0.9094
 RandomForest,Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.51,0.8305,0.8299,0.5359,0.829,0.651,0.9103
 HistGradientBoosting,Primary Type + Location Description + Beat,2023-Jun24 / Jul-Dec24 / 2025,236927.0,0.55,0.8313,0.8306,0.5373,0.8294,0.6521,0.9114
