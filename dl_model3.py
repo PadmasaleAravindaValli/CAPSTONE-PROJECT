@@ -5,7 +5,12 @@ from data_utils import (FEATURES, SEED, RESULTS, load_splits, best_threshold, re
 
 MIN_COUNT = 20          # categories rarer than this in TRAIN share the "unknown" id 0 (so id 0 gets trained)
 
-torch.manual_seed(SEED); np.random.seed(SEED)
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+
 dev = "cuda" if torch.cuda.is_available() else "cpu"
 (Xtr, ytr), (Xva, yva), (Xte, yte) = load_splits()
 
@@ -72,6 +77,12 @@ for ep in range(30):
         bad += 1
         if bad >= 5:
             print("early stopping"); break
+
+if best_state is None:
+    raise RuntimeError(
+        "No valid FT-Transformer checkpoint was saved. "
+        "Check the training data and validation AUC."
+    )
 
 net.load_state_dict(best_state)
 p_va = predict(Cva)

@@ -1,0 +1,5 @@
+Model,Threshold,Accuracy,Balanced_Acc,Precision,Recall,F1_Score,ROC_AUC
+Base: LR,0.53,0.8276,0.8277,0.5314,0.828,0.6473,0.909
+Base: HGB,0.55,0.8325,0.8317,0.5402,0.8303,0.6545,0.9121
+Base: XGB,0.52,0.8288,0.8294,0.5333,0.8303,0.6495,0.9103
+Stacked Meta-Ensemble (LR + HGB + XGB),0.21,0.8313,0.8318,0.5378,0.8326,0.6535,0.9122

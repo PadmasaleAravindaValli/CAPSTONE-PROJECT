@@ -1,0 +1,7 @@
+Configuration,Threshold,Accuracy,Balanced_Accuracy,Precision,Recall,F1_Score,ROC_AUC,Drop_Delta_AUC,Drop_Delta_F1
+Full Model (All Features),0.49,0.8188,0.8357,0.5154,0.8631,0.6454,0.915,0.0,0.0
+Drop: Bayesian Risk Priors,0.49,0.819,0.8355,0.5157,0.8623,0.6454,0.9141,-0.0009,0.0
+Drop: Cyclical Trigonometric,0.51,0.8241,0.8355,0.5243,0.8539,0.6497,0.915,0.0,0.0043
+Drop: Venue / Shift Flags,0.49,0.8184,0.8354,0.5147,0.863,0.6448,0.915,0.0,-0.0006
+Drop: Spatial Coordinates & Beats,0.5,0.821,0.835,0.519,0.8577,0.6467,0.9143,-0.0007,0.0013
+Drop: High-Cardinality Interaction,0.5,0.8205,0.8349,0.5182,0.8582,0.6462,0.9148,-0.0002,0.0008

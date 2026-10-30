@@ -1,0 +1,7 @@
+Threshold,Accuracy,Balanced_Accuracy,Precision,Recall,F1_Score,ROC_AUC,Model,Type
+0.56,0.8319,0.8339,0.5381,0.8371,0.6551,0.9133,MLP (Categorical Embeddings),Deep Learning
+0.59,0.8325,0.8334,0.5393,0.8348,0.6553,0.913,FT-Transformer,Deep Learning
+0.52,0.8303,0.8307,0.5354,0.8315,0.6513,0.9119,XGBoost,Classical ML
+0.55,0.8313,0.8306,0.5373,0.8294,0.6521,0.9114,HistGradientBoosting,Classical ML
+0.51,0.8305,0.8299,0.5359,0.829,0.651,0.9103,Random Forest,Classical ML
+0.53,0.8271,0.8276,0.5299,0.8285,0.6463,0.9094,Logistic Regression,Classical ML

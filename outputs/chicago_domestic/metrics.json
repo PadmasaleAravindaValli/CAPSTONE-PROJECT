@@ -1,0 +1,36 @@
+{
+  "target": "Domestic",
+  "features": [
+    "Primary Type",
+    "Location Description",
+    "Beat",
+    "Hour",
+    "Month",
+    "DayOfWeek",
+    "IsWeekend"
+  ],
+  "train_period": "2023-01-01 through 2024-06-30",
+  "validation_period": "2024-07-01 through 2024-12-31",
+  "test_period": "2025",
+  "validation_selected_threshold": 0.2,
+  "test_metrics_validation_threshold": {
+    "split": "TEST (2025)",
+    "threshold": 0.2,
+    "accuracy": 0.8331192432582685,
+    "balanced_accuracy": 0.8349188122981959,
+    "precision_domestic": 0.5397223568313332,
+    "recall_domestic": 0.8378246825080756,
+    "f1_domestic": 0.6565187239944521,
+    "roc_auc": 0.9137468716931685
+  },
+  "test_metrics_default_threshold": {
+    "split": "TEST (2025), default threshold 0.50",
+    "threshold": 0.5,
+    "accuracy": 0.8792026583669911,
+    "balanced_accuracy": 0.7580487017149948,
+    "precision_domestic": 0.7405896748630696,
+    "recall_domestic": 0.5624142661179699,
+    "f1_domestic": 0.6393199366213124,
+    "roc_auc": 0.9137468716931685
+  }
+}

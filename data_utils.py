@@ -12,15 +12,25 @@ TARGET = "Domestic"
 SEED = 42
 
 
-def _detect_features():
-    """Features = every column the dataset builder kept, except the target and the split label."""
-    if DATA.exists():
-        cols = pd.read_csv(DATA, nrows=0).columns
-        return [c for c in cols if c not in (TARGET, "split")]
-    return ["Primary Type", "Location Description", "Beat"]   # fallback if the CSV is not built yet
 
+# Fixed feature list: keep all models consistent with the experiment.
+FEATURES = [
+    "Primary Type",
+    "Location Description",
+    "Beat",
+]
 
-FEATURES = _detect_features()      # all treated as categorical
+# Fail early if the processed dataset does not contain the expected columns.
+if DATA.exists():
+    available_columns = pd.read_csv(DATA, nrows=0).columns.tolist()
+    required_columns = FEATURES + [TARGET, "split"]
+    missing_columns = [c for c in required_columns if c not in available_columns]
+
+    if missing_columns:
+        raise ValueError(
+            f"Processed dataset is missing required columns: {missing_columns}"
+        )
+
 
 
 def load_splits():
