@@ -1,0 +1,8 @@
+Configuration,Threshold,Accuracy,Balanced_Accuracy,Precision,Recall,F1_Score,ROC_AUC,Cumulative_Delta_AUC,Cumulative_Delta_F1
+1. Raw Temporal,0.48,0.491,0.5416,0.2142,0.6235,0.3188,0.5593,0.0,0.0
+2. + Spatial Baseline,0.48,0.5508,0.638,0.2678,0.779,0.3986,0.6876,0.1283,0.0798
+3. + Raw Crime Categories (Dataset 1),0.49,0.8161,0.8341,0.5111,0.8631,0.642,0.9132,0.3539,0.3232
+4. + Cyclical Trigonometric Time,0.49,0.8159,0.834,0.5108,0.8632,0.6418,0.9133,0.354,0.323
+5. + Venue & Shift Indicators,0.5,0.8228,0.8359,0.5222,0.8572,0.649,0.9142,0.3549,0.3302
+6. + Bayesian Risk Priors & Volume,0.5,0.8205,0.8349,0.5182,0.8582,0.6462,0.9148,0.3555,0.3274
+7. Full Model + Interaction (Dataset 2),0.49,0.8188,0.8357,0.5154,0.8631,0.6454,0.915,0.3557,0.3266

@@ -1,0 +1,7 @@
+Threshold,Accuracy,Balanced_Acc,Precision,Recall,F1_Score,ROC_AUC,Model,Dataset
+0.53,0.8279,0.8286,0.5317,0.8298,0.6481,0.9095,Logistic Regression,Dataset 1 (Base 14 Features)
+0.54,0.8306,0.8327,0.5365,0.836,0.6535,0.9138,HistGradientBoosting,Dataset 1 (Base 14 Features)
+0.53,0.8341,0.8352,0.5428,0.8369,0.6585,0.9149,XGBoost,Dataset 1 (Base 14 Features)
+0.52,0.8249,0.8289,0.5263,0.8354,0.6457,0.9081,Logistic Regression,Dataset 2 (Enhanced 29 Features)
+0.54,0.8339,0.8359,0.5423,0.8391,0.6588,0.9152,HistGradientBoosting,Dataset 2 (Enhanced 29 Features)
+0.54,0.8365,0.8362,0.5473,0.8356,0.6614,0.9156,XGBoost,Dataset 2 (Enhanced 29 Features)

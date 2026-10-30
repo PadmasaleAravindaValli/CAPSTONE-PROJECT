@@ -1,0 +1,6 @@
+Model,Optimal_Threshold,Accuracy,Balanced_Accuracy,Precision,Recall,F1_Score,ROC_AUC
+XGBoost,0.47,0.8131,0.8355,0.5063,0.8718,0.6406,0.9152
+Logistic Regression,0.5,0.823,0.8353,0.5224,0.8553,0.6486,0.9135
+PyTorch Deep MLP,0.52,0.816,0.8347,0.5109,0.865,0.6424,0.9124
+HistGradientBoosting,0.48,0.8153,0.8337,0.5098,0.8634,0.641,0.9136
+Random Forest,0.48,0.8198,0.832,0.5173,0.8517,0.6436,0.9084

@@ -1,0 +1,18 @@
+Feature,Mean_Abs_SHAP
+Primary_Type_Domestic_Risk,1.785203
+Location_Domestic_Risk,1.1493031
+Beat_Domestic_Risk,0.38102296
+Beat,0.11015698
+Location Description,0.087151706
+Month,0.07675544
+Beat_Historical_Incident_Volume,0.071534395
+Hour_Cos,0.064291514
+DayOfWeek,0.062977955
+Primary Type,0.056275416
+Hour_Sin,0.055811748
+Is_Public_Space,0.05396352
+Is_Residential,0.04749922
+Hour,0.04030737
+Time_Period,0.032584205
+Is_Night,0.006882475
+IsWeekend,0.0

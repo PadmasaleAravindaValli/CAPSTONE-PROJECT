@@ -1,0 +1,20 @@
+Feature,Correlation_with_Domestic,Abs_Correlation,Mutual_Information,Category
+Primary_Type_Domestic_Risk,0.5236,0.5236,0.1391,Bayesian Risk Prior
+Location_Domestic_Risk,0.4486,0.4486,0.0991,Bayesian Risk Prior
+Is_Residential,0.4123,0.4123,0.087,Venue / Shift Flag
+Latitude,-0.1243,0.1243,0.0465,Spatial / Volume
+Longitude,0.0111,0.0111,0.0453,Spatial / Volume
+Is_Public_Space,-0.2258,0.2258,0.0374,Venue / Shift Flag
+Beat_Domestic_Risk,0.2146,0.2146,0.0269,Bayesian Risk Prior
+Beat_Historical_Incident_Volume,-0.0193,0.0193,0.023,Spatial / Volume
+Is_Night,0.0538,0.0538,0.0073,Venue / Shift Flag
+DayOfWeek_Cos,0.0198,0.0198,0.0042,Cyclical Temporal
+Hour_Cos,0.0521,0.0521,0.004,Cyclical Temporal
+Hour,-0.0233,0.0233,0.0033,Raw Temporal
+DayOfWeek,0.0234,0.0234,0.0032,Raw Temporal
+IsWeekend,0.0339,0.0339,0.0028,Raw Temporal
+DayOfWeek_Sin,-0.0238,0.0238,0.0024,Cyclical Temporal
+Month_Cos,-0.0083,0.0083,0.002,Cyclical Temporal
+Month_Sin,0.0127,0.0127,0.0015,Cyclical Temporal
+Hour_Sin,0.0355,0.0355,0.0015,Cyclical Temporal
+Month,-0.0062,0.0062,0.0,Raw Temporal
